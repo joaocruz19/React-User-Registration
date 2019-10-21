@@ -12,40 +12,56 @@ const headerProps = {
 const baseUrl = "http://localhost:3001/users";
 const initialState = {
     user: { name: '', email: '' },
-    list: []
+    usersList: []
 }
 
 export default class UserCrud extends Component {
     state = { ...initialState };
 
+    constructor(props) {
+        super(props);
+        this.clearInputs = this.clearInputs.bind(this);
+        this.saveUser = this.saveUser.bind(this);
+        this.updateUserState = this.updateUserState.bind(this);
+        this.loadUser =  this.loadUser.bind(this);
+        this.removeUser = this.removeUser.bind(this);
+    }
+
     componentWillMount() {
         axios.get(baseUrl).then(resp => {
-            this.setState({ list: resp.data });
+            this.setState({ usersList: resp.data });
         })
     }
 
-    clear() {
+    clearInputs() {
         this.setState({ user: initialState.user });
     }
 
-    save() {
+    saveUser() {
         const user = this.state.user;
         const method = user.id ? "put" : "post";
         const url = user.id ? `${baseUrl}/${user.id}` : baseUrl;
         axios[method](url, user)
             .then(resp => {
-                const list = this.getUpdatedList(resp.data);
-                this.setState({ user: initialState.user, list });
+                const usersList = this.getUpdatedUsersList(resp.data);
+                this.setState({ user: initialState.user, usersList });
             })
     }
 
-    getUpdatedList(user) {
-        const list = this.state.list.filter(u => u.id !== user.id);
-        list.unshift(user);
-        return list;
+    getUpdatedUsersList(user) {
+        const updatedUsersList = this.removeCurrentUser(user);
+        updatedUsersList.unshift(user);
+        return updatedUsersList;
     }
 
-    updateField(event) {
+    removeCurrentUser(user) {
+        const newUsersList = this.state.usersList.filter(u =>
+            u.id !== user.id
+        );
+        return newUsersList;
+    }
+
+    updateUserState(event) {
         const user = { ...this.state.user };
         user[event.target.name] = event.target.value;
         this.setState({ user });
@@ -59,7 +75,7 @@ export default class UserCrud extends Component {
                         <label>Name</label>
                         <input type="text" name="name" className="form-control"
                             value={this.state.user.name}
-                            onChange={e => this.updateField(e)}
+                            onChange={e => this.updateUserState(e)}
                             placeholder="Type the name..." />
                     </div>
                     <div className="col-12 col-md-6">
@@ -67,7 +83,7 @@ export default class UserCrud extends Component {
                             <label>E-mail</label>
                             <input type="text" name="email" className="form-control"
                                 value={this.state.user.email}
-                                onChange={e => this.updateField(e)}
+                                onChange={e => this.updateUserState(e)}
                                 placeholder="type the email..." />
                         </div>
                     </div>
@@ -76,11 +92,11 @@ export default class UserCrud extends Component {
                 <div className="row">
                     <div className="col-12 d-flex justify-content-end">
                         <button className="btn btn-primary"
-                            onClick={e => this.save(e)}>
+                            onClick={this.saveUser}>
                             Save
                         </button>
                         <button className="btn btn-secondary ml-2"
-                            onClick={e => this.clear(e)}>
+                            onClick={this.clearInputs}>
                             Cancel
                         </button>
                     </div>
@@ -93,10 +109,10 @@ export default class UserCrud extends Component {
         this.setState({ user });
     }
 
-    remove(user) {
+    removeUser(user) {
         axios.delete(`${baseUrl}/${user.id}`).then(resp => {
-            const list = this.state.list.filter(u => u !== user);
-            this.setState({ list });
+            const usersList = this.removeCurrentUser(user);
+            this.setState({ usersList });
         })
     }
 
@@ -118,7 +134,7 @@ export default class UserCrud extends Component {
     }
 
     renderRows() {
-        return this.state.list.map(user => {
+        return this.state.usersList.map(user => {
             return (
                 <tr key={user.id}>
                     <td>{user.name}</td>
@@ -129,7 +145,7 @@ export default class UserCrud extends Component {
                             <i className="fa fa-pencil"></i>
                         </button>
                         <button className="btn btn-danger ml-2"
-                            onClick={() => this.remove(user)}>
+                            onClick={() => this.removeUser(user)}>
                             <i className="fa fa-trash"></i>
                         </button>
                     </td>
